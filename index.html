@@ -25,7 +25,7 @@
   <style>
     body { font-family: system-ui, -apple-system, sans-serif; background-color: #0f172a; color: #f8fafc; }
     .btn-big { min-height: 3.5rem; font-size: 1.2rem; }
-    pre { font-family: 'Courier New', Courier, monospace; white-space: pre-wrap; }
+    pre, textarea { font-family: 'Courier New', Courier, monospace; white-space: pre; }
 
     /* Animazione Note Musicali Fluttuanti per la Schermata Intro */
     @keyframes floatNote {
@@ -56,7 +56,7 @@
 
     <div class="h-20 flex items-center justify-center px-4">
       <p id="splashMessage" class="text-xl sm:text-2xl text-slate-200 font-medium max-w-lg transition-all duration-500 leading-relaxed">
-        Inizializzazione Raccolta Spartiti...
+        Caricamento Database IndexedDB...
       </p>
     </div>
 
@@ -155,7 +155,7 @@
             <div id="thumbnailsContainer" class="flex gap-3 overflow-x-auto py-2"></div>
             
             <div id="ocrStatus" class="hidden text-amber-400 font-bold text-center animate-pulse">
-              <i class="fa-solid fa-spinner fa-spin mr-2"></i> Riconoscimento OCR in corso...
+              <i class="fa-solid fa-spinner fa-spin mr-2"></i> Riconoscimento OCR con spaziatura in corso...
             </div>
 
             <div class="grid grid-cols-1 sm:grid-cols-3 gap-2 pt-2">
@@ -164,7 +164,7 @@
                 <input type="file" id="cameraInputMore" accept="image/*" capture="environment" onchange="handleImageCaptured(event)" class="hidden">
               </label>
               <button onclick="convertToPDFAndSave()" class="btn-big bg-red-600 hover:bg-red-500 text-white font-bold rounded-xl flex items-center justify-center gap-2 text-sm">
-                <i class="fa-solid fa-file-pdf"></i> Salva PDF (<span id="btnPageCount">0</span> pag)
+                <i class="fa-solid fa-file-pdf"></i> Salva Foto / PDF (<span id="btnPageCount">0</span> pag)
               </button>
               <button onclick="extractTextWithOCR()" class="btn-big bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-xl flex items-center justify-center gap-2 text-sm">
                 <i class="fa-solid fa-font"></i> Estrai Testo (OCR)
@@ -205,7 +205,7 @@
       </div>
     </div>
 
-    <!-- VISUALIZZATORE SPARTITO -->
+    <!-- VISUALIZZATORE SPARTITO UNIFICATO -->
     <div id="resultCard" class="hidden bg-slate-800 p-6 rounded-2xl border border-slate-700 shadow-xl space-y-4">
       <div class="flex justify-between items-center border-b border-slate-700 pb-4">
         <div>
@@ -217,35 +217,66 @@
         </button>
       </div>
 
-      <!-- Controlli Grafici per il Testo (Tema, Font, Dimensione) -->
-      <div id="textControls" class="hidden flex flex-wrap items-center justify-between gap-3 bg-slate-900 p-3 rounded-xl border border-slate-700">
-        <div class="flex items-center gap-2">
-          <span class="text-xs text-slate-400 font-bold">FONT:</span>
-          <select id="fontFamilySelect" onchange="changeFontFamily()" class="bg-slate-800 text-white text-xs p-2 rounded-lg border border-slate-700 font-bold">
-            <option value="'Courier New', Courier, monospace">Monospace (Allineato Accordi)</option>
-            <option value="system-ui, sans-serif">Sans-Serif (Moderna)</option>
-            <option value="Georgia, serif">Serif (Classica)</option>
-          </select>
-        </div>
-
-        <div class="flex items-center gap-2">
-          <span class="text-xs text-slate-400 font-bold">TEMA:</span>
-          <select id="viewerThemeSelect" onchange="changeViewerTheme()" class="bg-slate-800 text-white text-xs p-2 rounded-lg border border-slate-700 font-bold">
-            <option value="light">📄 Bianco Carta (Nero/Bianco)</option>
-            <option value="dark">🌙 Notte (Scuro)</option>
-            <option value="sepia">📜 Seppia (Vintage)</option>
-          </select>
-        </div>
-
-        <div class="flex items-center gap-2">
-          <span class="text-xs text-slate-400 font-bold">DIMENSIONE:</span>
-          <button onclick="changeFontSize(-2)" class="px-3 py-1 bg-slate-700 text-white font-bold rounded-lg text-lg">-</button>
-          <button onclick="changeFontSize(2)" class="px-3 py-1 bg-slate-700 text-white font-bold rounded-lg text-lg">+</button>
-        </div>
+      <!-- SCHEDE DI SWITCH TRA ORIGINALE HD E TESTO EDITABILE -->
+      <div id="viewerTabs" class="flex gap-2 border-b border-slate-700 pb-3">
+        <button id="btnTabVisual" onclick="switchViewerSubTab('visual')" class="px-4 py-2 font-bold rounded-xl bg-blue-600 text-white text-sm sm:text-base transition">
+          <i class="fa-solid fa-file-image mr-1"></i> Originale (HD/PDF)
+        </button>
+        <button id="btnTabText" onclick="switchViewerSubTab('text')" class="px-4 py-2 font-bold rounded-xl bg-slate-700 text-slate-300 text-sm sm:text-base transition">
+          <i class="fa-solid fa-file-pen mr-1"></i> Testo & Accordi
+        </button>
       </div>
 
-      <!-- Area Contenuto Spartito -->
-      <div id="viewerBody" class="bg-slate-950 p-4 rounded-xl border border-slate-800 min-h-[300px] transition-colors duration-300"></div>
+      <!-- CONTENITORE VISUALE (IMMAGINI HD / PDF / LINK) -->
+      <div id="visualContainer" class="hidden space-y-4">
+        <div id="visualBody" class="bg-slate-950 p-4 rounded-xl border border-slate-800 min-h-[300px]"></div>
+      </div>
+
+      <!-- CONTENITORE TESTO MODIFICABILE -->
+      <div id="textContainer" class="hidden space-y-4">
+        <!-- Controlli Grafici per il Testo (Tema, Font, Dimensione) -->
+        <div id="textControls" class="flex flex-wrap items-center justify-between gap-3 bg-slate-900 p-3 rounded-xl border border-slate-700">
+          <div class="flex items-center gap-2">
+            <span class="text-xs text-slate-400 font-bold">FONT:</span>
+            <select id="fontFamilySelect" onchange="changeFontFamily()" class="bg-slate-800 text-white text-xs p-2 rounded-lg border border-slate-700 font-bold">
+              <option value="'Courier New', Courier, monospace">Monospace (Allineato Accordi)</option>
+              <option value="system-ui, sans-serif">Sans-Serif (Moderna)</option>
+              <option value="Georgia, serif">Serif (Classica)</option>
+            </select>
+          </div>
+
+          <div class="flex items-center gap-2">
+            <span class="text-xs text-slate-400 font-bold">TEMA:</span>
+            <select id="viewerThemeSelect" onchange="changeViewerTheme()" class="bg-slate-800 text-white text-xs p-2 rounded-lg border border-slate-700 font-bold">
+              <option value="light">📄 Bianco Carta (Nero/Bianco)</option>
+              <option value="dark">🌙 Notte (Scuro)</option>
+              <option value="sepia">📜 Seppia (Vintage)</option>
+            </select>
+          </div>
+
+          <div class="flex items-center gap-2">
+            <span class="text-xs text-slate-400 font-bold">DIMENSIONE:</span>
+            <button onclick="changeFontSize(-2)" class="px-3 py-1 bg-slate-700 text-white font-bold rounded-lg text-lg">-</button>
+            <button onclick="changeFontSize(2)" class="px-3 py-1 bg-slate-700 text-white font-bold rounded-lg text-lg">+</button>
+          </div>
+        </div>
+
+        <div class="flex flex-wrap justify-between items-center bg-slate-900 p-3 rounded-xl border border-slate-700 gap-2">
+          <span class="text-xs text-slate-300 font-semibold flex items-center gap-1">
+            <i class="fa-solid fa-keyboard text-blue-400"></i> Modifica testo e spazi a mano:
+          </span>
+          <div class="flex gap-2">
+            <button id="btnRunOcrOnCurrent" onclick="runOcrOnCurrentSong()" class="hidden px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold rounded-lg flex items-center gap-1 shadow">
+              <i class="fa-solid fa-font"></i> Genera/Esegui OCR
+            </button>
+            <button onclick="saveCurrentSongText()" class="px-3 py-1.5 bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold rounded-lg flex items-center gap-1 shadow">
+              <i class="fa-solid fa-floppy-disk"></i> Salva Modifiche Testo
+            </button>
+          </div>
+        </div>
+
+        <textarea id="textContentArea" oninput="applyTextStyles()" class="w-full bg-slate-950 p-4 rounded-xl border border-slate-800 font-mono leading-relaxed outline-none transition-colors duration-300 resize-y min-h-[350px]" style="white-space: pre; overflow-x: auto;"></textarea>
+      </div>
     </div>
   </main>
 
@@ -255,13 +286,13 @@
       <input type="text" id="archiveSearchInput" oninput="renderArchive()" placeholder="Cerca tra gli spartiti salvati..." class="w-full bg-slate-900 border-2 border-slate-700 rounded-xl p-3 text-lg text-white outline-none focus:border-blue-500">
     </div>
 
-    <!-- SEZIONE BACKUP & SICUREZZA -->
+    <!-- SEZIONE BACKUP & SICUREZZA INDEXEDDB -->
     <div class="bg-slate-800 p-5 rounded-2xl border border-slate-700 shadow-xl space-y-3">
       <h3 class="font-bold text-lg text-white flex items-center gap-2">
-        <i class="fa-solid fa-shield-halved text-emerald-400"></i> Backup & Sicurezza Dati
+        <i class="fa-solid fa-shield-halved text-emerald-400"></i> Backup & Sicurezza Archivio (IndexedDB)
       </h3>
       <p class="text-sm text-slate-300 leading-relaxed">
-        Salva una copia di sicurezza di tutti i tuoi spartiti per non perderli mai.
+        I tuoi spartiti e le immagini HD sono protetti nel database locale del tablet. Scarica una copia di backup JSON per portarli su un altro dispositivo senza perdere nulla.
       </p>
       <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">
         <button onclick="exportBackup()" class="btn-big bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-xl flex items-center justify-center gap-2 shadow-md">
@@ -278,15 +309,104 @@
   </section>
 
   <script>
+    // ==========================================
+    // MODULO DATABASE NATIVO (IndexedDB)
+    // ==========================================
+    const DB_NAME = "SpartitiExpressDB";
+    const DB_VERSION = 1;
+    const STORE_NAME = "spartiti";
+
+    function openDB() {
+      return new Promise((resolve, reject) => {
+        const request = indexedDB.open(DB_NAME, DB_VERSION);
+        request.onupgradeneeded = (e) => {
+          const db = e.target.result;
+          if (!db.objectStoreNames.contains(STORE_NAME)) {
+            db.createObjectStore(STORE_NAME, { keyPath: "id" });
+          }
+        };
+        request.onsuccess = () => resolve(request.result);
+        request.onerror = () => reject(request.error);
+      });
+    }
+
+    async function dbSaveSong(song) {
+      const db = await openDB();
+      return new Promise((resolve, reject) => {
+        const tx = db.transaction(STORE_NAME, "readwrite");
+        const store = tx.objectStore(STORE_NAME);
+        const req = store.put(song);
+        req.onsuccess = () => resolve(req.result);
+        req.onerror = () => reject(req.error);
+      });
+    }
+
+    async function dbGetAllSongs() {
+      const db = await openDB();
+      return new Promise((resolve, reject) => {
+        const tx = db.transaction(STORE_NAME, "readonly");
+        const store = tx.objectStore(STORE_NAME);
+        const req = store.getAll();
+        req.onsuccess = () => resolve(req.result || []);
+        req.onerror = () => reject(req.error);
+      });
+    }
+
+    async function dbGetSong(id) {
+      const db = await openDB();
+      return new Promise((resolve, reject) => {
+        const tx = db.transaction(STORE_NAME, "readonly");
+        const store = tx.objectStore(STORE_NAME);
+        const req = store.get(id);
+        req.onsuccess = () => resolve(req.result);
+        req.onerror = () => reject(req.error);
+      });
+    }
+
+    async function dbDeleteSong(id) {
+      const db = await openDB();
+      return new Promise((resolve, reject) => {
+        const tx = db.transaction(STORE_NAME, "readwrite");
+        const store = tx.objectStore(STORE_NAME);
+        const req = store.delete(id);
+        req.onsuccess = () => resolve(req.result);
+        req.onerror = () => reject(req.error);
+      });
+    }
+
+    // Migrazione automatica dai vecchi dati localStorage a IndexedDB
+    async function migrateFromLocalStorage() {
+      try {
+        const oldData = localStorage.getItem("spartiti_db");
+        if (oldData) {
+          const songs = JSON.parse(oldData);
+          if (Array.isArray(songs) && songs.length > 0) {
+            for (const s of songs) {
+              await dbSaveSong(s);
+            }
+          }
+          localStorage.removeItem("spartiti_db");
+        }
+      } catch (err) {
+        console.error("Errore migrazione:", err);
+      }
+    }
+
+
+    // ==========================================
+    // LOGICA DI STATO ED EVENTI DELL'APP
+    // ==========================================
     let scanPages = [];
     let directPdfData = null;
     let currentFontSize = 18;
     let currentFontFamily = "'Courier New', Courier, monospace";
     let currentTheme = "light";
     let splashTimeout = null;
+    let currentDisplayedSong = null;
 
-    document.addEventListener("DOMContentLoaded", () => {
-      updateArchiveCount();
+    document.addEventListener("DOMContentLoaded", async () => {
+      await migrateFromLocalStorage();
+      await updateArchiveCount();
 
       setTimeout(() => {
         const bar = document.getElementById("splashProgressBar");
@@ -298,7 +418,7 @@
         if (msg) {
           msg.style.opacity = 0;
           setTimeout(() => {
-            msg.innerText = "Pronto per il live! Tutti i tuoi spartiti sono sincronizzati.";
+            msg.innerText = "Pronto per il live! Database IndexedDB attivo.";
             msg.className = "text-xl sm:text-2xl text-emerald-300 font-bold max-w-lg leading-relaxed";
             msg.style.opacity = 1;
 
@@ -352,11 +472,11 @@
       return { query, inst };
     }
 
-    function handleSearch() {
+    async function handleSearch() {
       const { query } = getCleanInput();
       if (!query) return;
 
-      const savedSongs = JSON.parse(localStorage.getItem("spartiti_db") || "[]");
+      const savedSongs = await dbGetAllSongs();
       const foundLocal = savedSongs.find(s => s.title.toLowerCase().includes(query.toLowerCase()));
 
       document.getElementById("resultCard").classList.add("hidden");
@@ -474,14 +594,20 @@
         id: Date.now().toString(),
         title: (query || "SPARTITO SCANSIONATO").toUpperCase(),
         instrument: inst,
-        type: 'file',
+        type: 'scan',
+        images: [...scanPages], // Salva le immagini HD native
         fileType: 'application/pdf',
-        fileData: pdfDataUrl
+        fileData: pdfDataUrl,
+        content: ""
       };
 
-      saveToStorage(song);
+      await dbSaveSong(song);
       scanPages = [];
       document.getElementById("scanPreviewContainer").classList.add("hidden");
+      document.getElementById("webSearchPanel").classList.add("hidden");
+      await updateArchiveCount();
+      displaySong(song);
+      alert("Spartito (Foto HD + PDF) salvato con successo nell'archivio protetto!");
     }
 
     async function extractTextWithOCR() {
@@ -492,11 +618,16 @@
 
       try {
         const worker = await Tesseract.createWorker('ita');
-        let fullText = "";
+        
+        // Mantiene la spaziatura orizzontale orizzontale tra note e testo
+        await worker.setParameters({
+          preserve_interword_spaces: '1',
+        });
 
+        let fullText = "";
         for (let i = 0; i < scanPages.length; i++) {
           const ret = await worker.recognize(scanPages[i]);
-          fullText += `\n--- PAGINA ${i + 1} ---\n` + ret.data.text;
+          fullText += (i > 0 ? "\n\n" : "") + `--- PAGINA ${i + 1} ---\n` + ret.data.text;
         }
 
         await worker.terminate();
@@ -506,16 +637,21 @@
           id: Date.now().toString(),
           title: (query || "TESTO ESTRATTO").toUpperCase(),
           instrument: inst,
-          type: 'text',
+          type: 'scan',
+          images: [...scanPages],
           content: fullText
         };
 
-        saveToStorage(song);
+        await dbSaveSong(song);
         scanPages = [];
         document.getElementById("scanPreviewContainer").classList.add("hidden");
+        document.getElementById("webSearchPanel").classList.add("hidden");
+        await updateArchiveCount();
+        displaySong(song);
+        alert("Spartito salvato! Testo estrapolato con spaziatura preservata.");
       } catch (err) {
         ocrStatus.classList.add("hidden");
-        alert("Errore durante l'OCR delle pagine.");
+        alert("Errore durante l'OCR delle pagine: " + err.message);
       }
     }
 
@@ -533,7 +669,7 @@
       reader.readAsDataURL(file);
     }
 
-    function saveDirectPdf() {
+    async function saveDirectPdf() {
       const { query, inst } = getCleanInput();
       if (!directPdfData) { alert("Seleziona prima un file PDF!"); return; }
 
@@ -543,57 +679,74 @@
         instrument: inst,
         type: 'file',
         fileType: 'application/pdf',
-        fileData: directPdfData
+        fileData: directPdfData,
+        content: ""
       };
 
-      saveToStorage(song);
+      await dbSaveSong(song);
       directPdfData = null;
       document.getElementById("directPdfName").classList.add("hidden");
       document.getElementById("directPdfInput").value = "";
+      document.getElementById("webSearchPanel").classList.add("hidden");
+      await updateArchiveCount();
+      displaySong(song);
+      alert("PDF Salvato nell'archivio!");
     }
 
-    function saveLink() {
+    async function saveLink() {
       const { query, inst } = getCleanInput();
       const url = document.getElementById("linkInput").value.trim();
       if (!url) { alert("Inserisci l'URL!"); return; }
 
-      const song = { id: Date.now().toString(), title: (query || "LINK SPARTITO").toUpperCase(), instrument: inst, type: 'link', url: url };
-      saveToStorage(song);
+      const song = { id: Date.now().toString(), title: (query || "LINK SPARTITO").toUpperCase(), instrument: inst, type: 'link', url: url, content: "" };
+      await dbSaveSong(song);
       document.getElementById("linkInput").value = "";
+      document.getElementById("webSearchPanel").classList.add("hidden");
+      await updateArchiveCount();
+      displaySong(song);
+      alert("Link salvato in Archivio!");
     }
 
-    function saveText() {
+    async function saveText() {
       const { query, inst } = getCleanInput();
       const content = document.getElementById("pastedContent").value.trim();
       if (!content) { alert("Scrivi o incolla il testo!"); return; }
 
       const song = { id: Date.now().toString(), title: (query || "SPARTITO TESTO").toUpperCase(), instrument: inst, type: 'text', content: content };
-      saveToStorage(song);
+      await dbSaveSong(song);
       document.getElementById("pastedContent").value = "";
-    }
-
-    function saveToStorage(song) {
-      let savedSongs = JSON.parse(localStorage.getItem("spartiti_db") || "[]");
-      savedSongs.push(song);
-      localStorage.setItem("spartiti_db", JSON.stringify(savedSongs));
-
       document.getElementById("webSearchPanel").classList.add("hidden");
-      updateArchiveCount();
+      await updateArchiveCount();
       displaySong(song);
-      alert("Spartito salvato in Archivio!");
+      alert("Testo salvato in Archivio!");
     }
 
+
+    // ==========================================
+    // VISUALIZZATORE E GESTIONE UNIFICATA SPARTITO
+    // ==========================================
     function displaySong(song) {
+      currentDisplayedSong = song;
       document.getElementById("songTitle").innerText = song.title;
       document.getElementById("songBadge").innerText = song.instrument.toUpperCase();
 
-      const viewerBody = document.getElementById("viewerBody");
-      const textControls = document.getElementById("textControls");
-      viewerBody.innerHTML = "";
-      textControls.classList.add("hidden");
+      const visualBody = document.getElementById("visualBody");
+      visualBody.innerHTML = "";
 
-      if (song.type === 'link') {
-        viewerBody.innerHTML = `
+      // Render del Contenuto Visuale (Foto HD / PDF / Link)
+      if (song.images && song.images.length > 0) {
+        song.images.forEach((imgSrc, idx) => {
+          visualBody.innerHTML += `
+            <div class="mb-4">
+              <p class="text-xs font-bold text-slate-400 mb-1 uppercase tracking-wider">Pagina ${idx + 1}</p>
+              <img src="${imgSrc}" class="w-full rounded-xl shadow-lg border border-slate-700 block" />
+            </div>
+          `;
+        });
+      } else if (song.fileData) {
+        visualBody.innerHTML = `<embed src="${song.fileData}#view=FitH" type="application/pdf" class="w-full h-[700px] rounded-xl bg-white" />`;
+      } else if (song.type === 'link') {
+        visualBody.innerHTML = `
           <div class="text-center py-8 space-y-4">
             <i class="fa-solid fa-link text-5xl text-blue-400"></i>
             <p class="text-xl text-slate-200">Spartito salvato tramite Link Web</p>
@@ -602,42 +755,110 @@
             </a>
           </div>
         `;
-      } else if (song.type === 'file') {
-        viewerBody.innerHTML = `<embed src="${song.fileData}#view=FitH" type="application/pdf" class="w-full h-[700px] rounded-xl bg-white" />`;
       } else {
-        textControls.classList.remove("hidden");
-        viewerBody.innerHTML = `<pre id="textContent" class="p-4 rounded-xl font-mono leading-relaxed overflow-x-auto">${song.content}</pre>`;
-        applyTextStyles();
+        visualBody.innerHTML = `<div class="text-center text-slate-400 py-12">Nessun file visivo o immagine allegata.<br>Utilizza la scheda <b>Testo & Accordi</b> per consultare o modificare il testo.</div>`;
+      }
+
+      // Popola il testo editabile
+      document.getElementById("textContentArea").value = song.content || "";
+
+      // Gestione del pulsante Genera OCR se sono presenti foto
+      const btnOcr = document.getElementById("btnRunOcrOnCurrent");
+      if (song.images && song.images.length > 0) {
+        btnOcr.classList.remove("hidden");
+      } else {
+        btnOcr.classList.add("hidden");
       }
 
       document.getElementById("resultCard").classList.remove("hidden");
+
+      // Di default apre la vista adatta
+      if (song.type === 'text' || (!song.images && !song.fileData && !song.url)) {
+        switchViewerSubTab('text');
+      } else {
+        switchViewerSubTab('visual');
+      }
+    }
+
+    function switchViewerSubTab(tab) {
+      const visualContainer = document.getElementById("visualContainer");
+      const textContainer = document.getElementById("textContainer");
+      const btnTabVisual = document.getElementById("btnTabVisual");
+      const btnTabText = document.getElementById("btnTabText");
+
+      if (tab === 'visual') {
+        visualContainer.classList.remove("hidden");
+        textContainer.classList.add("hidden");
+        btnTabVisual.className = "px-4 py-2 font-bold rounded-xl bg-blue-600 text-white text-sm sm:text-base transition";
+        btnTabText.className = "px-4 py-2 font-bold rounded-xl bg-slate-700 text-slate-300 text-sm sm:text-base transition";
+      } else {
+        visualContainer.classList.add("hidden");
+        textContainer.classList.remove("hidden");
+        btnTabText.className = "px-4 py-2 font-bold rounded-xl bg-blue-600 text-white text-sm sm:text-base transition";
+        btnTabVisual.className = "px-4 py-2 font-bold rounded-xl bg-slate-700 text-slate-300 text-sm sm:text-base transition";
+        applyTextStyles();
+      }
+    }
+
+    async function saveCurrentSongText() {
+      if (!currentDisplayedSong) return;
+      currentDisplayedSong.content = document.getElementById("textContentArea").value;
+      await dbSaveSong(currentDisplayedSong);
+      alert("Modifiche al testo e alla spaziatura degli accordi salvate con successo!");
+    }
+
+    async function runOcrOnCurrentSong() {
+      if (!currentDisplayedSong || !currentDisplayedSong.images || currentDisplayedSong.images.length === 0) {
+        alert("Nessuna immagine ad alta definizione trovata in questo file.");
+        return;
+      }
+
+      const btn = document.getElementById("btnRunOcrOnCurrent");
+      btn.disabled = true;
+      btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin mr-1"></i> OCR in corso...`;
+
+      try {
+        const worker = await Tesseract.createWorker('ita');
+        await worker.setParameters({ preserve_interword_spaces: '1' });
+        
+        let fullText = "";
+        for (let i = 0; i < currentDisplayedSong.images.length; i++) {
+          const ret = await worker.recognize(currentDisplayedSong.images[i]);
+          fullText += (i > 0 ? "\n\n" : "") + `--- PAGINA ${i + 1} ---\n` + ret.data.text;
+        }
+        await worker.terminate();
+
+        currentDisplayedSong.content = fullText;
+        document.getElementById("textContentArea").value = fullText;
+        await dbSaveSong(currentDisplayedSong);
+        alert("Testo estratto con successo e salvato nell'archivio!");
+      } catch (err) {
+        alert("Errore durante l'OCR: " + err.message);
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = `<i class="fa-solid fa-font mr-1"></i> Rigenera OCR`;
+      }
     }
 
     function applyTextStyles() {
-      const el = document.getElementById("textContent");
-      const viewerBody = document.getElementById("viewerBody");
-      if (!el || !viewerBody) return;
+      const el = document.getElementById("textContentArea");
+      if (!el) return;
 
       el.style.fontSize = `${currentFontSize}px`;
       el.style.fontFamily = currentFontFamily;
 
-      viewerBody.className = "p-4 rounded-xl border transition-colors duration-300 shadow-inner overflow-x-auto";
-      
       if (currentTheme === 'light') {
-        viewerBody.style.backgroundColor = "#ffffff";
-        viewerBody.style.color = "#0f172a";
-        viewerBody.style.borderColor = "#cbd5e1";
+        el.style.backgroundColor = "#ffffff";
         el.style.color = "#0f172a";
+        el.style.borderColor = "#cbd5e1";
       } else if (currentTheme === 'sepia') {
-        viewerBody.style.backgroundColor = "#fdf6e2";
-        viewerBody.style.color = "#433422";
-        viewerBody.style.borderColor = "#e6d5b8";
+        el.style.backgroundColor = "#fdf6e2";
         el.style.color = "#433422";
+        el.style.borderColor = "#e6d5b8";
       } else {
-        viewerBody.style.backgroundColor = "#020617";
-        viewerBody.style.color = "#f8fafc";
-        viewerBody.style.borderColor = "#1e293b";
+        el.style.backgroundColor = "#020617";
         el.style.color = "#f8fafc";
+        el.style.borderColor = "#1e293b";
       }
     }
 
@@ -660,27 +881,30 @@
 
     function closeViewer() {
       document.getElementById("resultCard").classList.add("hidden");
+      currentDisplayedSong = null;
     }
 
-    function deleteSong(id) {
-      if (confirm("Cancellare questo spartito dall'archivio?")) {
-        let savedSongs = JSON.parse(localStorage.getItem("spartiti_db") || "[]");
-        savedSongs = savedSongs.filter(s => s.id !== id);
-        localStorage.setItem("spartiti_db", JSON.stringify(savedSongs));
-        updateArchiveCount();
+
+    // ==========================================
+    // ARCHIVIO & BACKUP
+    // ==========================================
+    async function deleteSong(id) {
+      if (confirm("Cancellare definitivamente questo spartito dall'archivio?")) {
+        await dbDeleteSong(id);
+        await updateArchiveCount();
         renderArchive();
       }
     }
 
-    function updateArchiveCount() {
-      const savedSongs = JSON.parse(localStorage.getItem("spartiti_db") || "[]");
+    async function updateArchiveCount() {
+      const savedSongs = await dbGetAllSongs();
       document.getElementById("archiveCount").innerText = savedSongs.length;
     }
 
-    function renderArchive() {
+    async function renderArchive() {
       const archiveList = document.getElementById("archiveList");
       const filter = document.getElementById("archiveSearchInput").value.toLowerCase();
-      const savedSongs = JSON.parse(localStorage.getItem("spartiti_db") || "[]");
+      const savedSongs = await dbGetAllSongs();
 
       const filtered = savedSongs.filter(s => s.title.toLowerCase().includes(filter));
 
@@ -693,7 +917,7 @@
         <div class="bg-slate-800 p-4 rounded-xl border border-slate-700 flex justify-between items-center gap-3">
           <div class="cursor-pointer flex-1" onclick="openFromArchive('${song.id}')">
             <h3 class="text-xl font-bold text-white">${song.title}</h3>
-            <span class="text-sm text-blue-400 font-semibold uppercase">${song.instrument} (${song.type})</span>
+            <span class="text-sm text-blue-400 font-semibold uppercase">${song.instrument} (${song.type || 'spartito'})</span>
           </div>
           <div class="flex gap-2">
             <button onclick="openFromArchive('${song.id}')" class="p-3 bg-blue-600 text-white rounded-lg font-bold">
@@ -707,60 +931,72 @@
       `).join("");
     }
 
-    function openFromArchive(id) {
-      const savedSongs = JSON.parse(localStorage.getItem("spartiti_db") || "[]");
-      const song = savedSongs.find(s => s.id === id);
+    async function openFromArchive(id) {
+      const song = await dbGetSong(id);
       if (song) {
         switchTab('search');
         displaySong(song);
       }
     }
 
-    function exportBackup() {
-      const savedSongs = localStorage.getItem("spartiti_db") || "[]";
-      const songsArray = JSON.parse(savedSongs);
-      if (songsArray.length === 0) { alert("L'archivio è vuoto!"); return; }
+    async function exportBackup() {
+      try {
+        const songsArray = await dbGetAllSongs();
+        if (songsArray.length === 0) {
+          alert("L'archivio è vuoto! Nessun dato da esportare.");
+          return;
+        }
 
-      const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(songsArray, null, 2));
-      const downloadAnchor = document.createElement('a');
-      const today = new Date().toISOString().slice(0, 10);
-      
-      downloadAnchor.setAttribute("href", dataStr);
-      downloadAnchor.setAttribute("download", `spartiti_express_backup_${today}.json`);
-      document.body.appendChild(downloadAnchor);
-      downloadAnchor.click();
-      downloadAnchor.remove();
+        const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(songsArray, null, 2));
+        const downloadAnchor = document.createElement('a');
+        const today = new Date().toISOString().slice(0, 10);
+        
+        downloadAnchor.setAttribute("href", dataStr);
+        downloadAnchor.setAttribute("download", `spartiti_express_backup_${today}.json`);
+        document.body.appendChild(downloadAnchor);
+        downloadAnchor.click();
+        downloadAnchor.remove();
+        alert("Backup dell'archivio esportato con successo nel tablet/telefono!");
+      } catch (err) {
+        alert("Errore durante l'esportazione: " + err.message);
+      }
     }
 
-    function importBackup(event) {
+    async function importBackup(event) {
       const file = event.target.files[0];
       if (!file) return;
 
       const reader = new FileReader();
-      reader.onload = function(e) {
+      reader.onload = async function(e) {
         try {
           const importedSongs = JSON.parse(e.target.result);
-          if (!Array.isArray(importedSongs)) throw new Error();
+          if (!Array.isArray(importedSongs)) throw new Error("File formato non valido.");
 
-          let existingSongs = JSON.parse(localStorage.getItem("spartiti_db") || "[]");
+          const existingSongs = await dbGetAllSongs();
+          let shouldMerge = false;
+
           if (existingSongs.length > 0) {
-            if (confirm("Unire i backup o sostituire l'archivio? OK = Unisci, Annulla = Sostituisci")) {
-              const existingIds = new Set(existingSongs.map(s => s.id));
-              const newSongs = importedSongs.filter(s => !existingIds.has(s.id));
-              existingSongs = [...existingSongs, ...newSongs];
-            } else {
-              existingSongs = importedSongs;
-            }
-          } else {
-            existingSongs = importedSongs;
+            shouldMerge = confirm("Unire il file di backup a quello esistente? (OK = Unisci, Annulla = Sostituisci tutto)");
           }
 
-          localStorage.setItem("spartiti_db", JSON.stringify(existingSongs));
-          updateArchiveCount();
+          if (!shouldMerge && existingSongs.length > 0) {
+            const db = await openDB();
+            const tx = db.transaction(STORE_NAME, "readwrite");
+            await new Promise(res => {
+              const req = tx.objectStore(STORE_NAME).clear();
+              req.onsuccess = res;
+            });
+          }
+
+          for (const song of importedSongs) {
+            await dbSaveSong(song);
+          }
+
+          await updateArchiveCount();
           renderArchive();
-          alert(`Backup ripristinato con successo!`);
+          alert("Backup ripristinato con successo!");
         } catch (err) {
-          alert("File di backup non valido.");
+          alert("Errore durante l'importazione: " + err.message);
         }
         event.target.value = "";
       };
