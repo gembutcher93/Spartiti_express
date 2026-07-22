@@ -43,28 +43,23 @@
   <!-- SCHERMATA INTRO ANIMATA (SPLASH SCREEN) -->
   <div id="splashScreen" onclick="skipSplash()" class="fixed inset-0 z-50 bg-slate-950 flex flex-col items-center justify-center p-6 text-center transition-opacity duration-700 cursor-pointer select-none">
     
-    <!-- Elementi Grafici Musicali Animati -->
     <div class="relative flex items-center justify-center mb-8">
       <div id="spinnerBorder" class="w-28 h-28 rounded-full border-4 border-blue-500/20 border-t-blue-500 animate-spin flex items-center justify-center"></div>
       <i class="fa-solid fa-clef text-5xl text-blue-400 absolute floating-note-1"></i>
-      
       <i class="fa-solid fa-music text-2xl text-blue-300 absolute -top-4 -left-8 floating-note-2"></i>
       <i class="fa-solid fa-note-sticky text-2xl text-emerald-400 absolute -bottom-2 -right-8 floating-note-3"></i>
     </div>
 
-    <!-- Titolo Brand -->
     <h1 class="text-4xl sm:text-5xl font-black text-transparent bg-clip-text bg-gradient-to-r from-blue-400 via-indigo-300 to-emerald-400 mb-6 tracking-wide">
       Spartiti&xpress
     </h1>
 
-    <!-- Messaggio Parlato Dinamico -->
     <div class="h-20 flex items-center justify-center px-4">
       <p id="splashMessage" class="text-xl sm:text-2xl text-slate-200 font-medium max-w-lg transition-all duration-500 leading-relaxed">
-        Salve Antonio, sto inizializzando la tua Raccolta di Spartiti...
+        Inizializzazione Raccolta Spartiti...
       </p>
     </div>
 
-    <!-- Barra di Progresso -->
     <div class="w-64 sm:w-80 bg-slate-800 h-3 rounded-full mt-6 overflow-hidden border border-slate-700/60 shadow-inner">
       <div id="splashProgressBar" class="bg-gradient-to-r from-blue-500 to-emerald-400 h-full w-0 transition-all duration-[2400ms] ease-out"></div>
     </div>
@@ -94,7 +89,6 @@
   <main id="searchSection" class="space-y-6">
     <div class="bg-slate-800 p-6 rounded-2xl border border-slate-700 shadow-xl space-y-4">
       
-      <!-- Strumento -->
       <div>
         <label class="block text-slate-400 text-sm font-semibold mb-2 uppercase tracking-wider">Strumento</label>
         <select id="instrumentSelect" class="w-full bg-slate-900 border-2 border-slate-700 rounded-xl p-3 text-lg font-bold text-blue-300 outline-none focus:border-blue-500">
@@ -105,7 +99,6 @@
         </select>
       </div>
 
-      <!-- Ricerca -->
       <div>
         <label class="block text-slate-400 text-sm font-semibold mb-2 uppercase tracking-wider">Titolo Canzone / Artista</label>
         <div class="flex gap-2">
@@ -120,7 +113,6 @@
     <!-- PANNELLO RICERCA WEB & SALVATAGGIO -->
     <div id="webSearchPanel" class="hidden bg-slate-800 p-6 rounded-2xl border border-blue-500/40 shadow-xl space-y-6">
       
-      <!-- Ricerca Web Rapida -->
       <div>
         <h3 class="font-bold text-xl text-white mb-3"><i class="fa-solid fa-globe text-blue-400 mr-2"></i>1. Cerca sul Web:</h3>
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -135,11 +127,9 @@
 
       <hr class="border-slate-700">
 
-      <!-- Modalità Aggiunta / Scanner / Carica PDF -->
       <div>
         <h3 class="font-bold text-xl text-white mb-3"><i class="fa-solid fa-box-archive text-emerald-400 mr-2"></i>2. Aggiungi all'Archivio:</h3>
         
-        <!-- Pulsanti Selezione Modalità -->
         <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-4">
           <button id="modeScanBtn" onclick="setSaveMode('scan')" class="p-3 bg-blue-600 font-bold rounded-xl text-sm sm:text-base">📷 Fotocamera</button>
           <button id="modePdfBtn" onclick="setSaveMode('pdf')" class="p-3 bg-slate-700 font-bold rounded-xl text-sm sm:text-base">📄 Carica PDF</button>
@@ -147,27 +137,36 @@
           <button id="modeTextBtn" onclick="setSaveMode('text')" class="p-3 bg-slate-700 font-bold rounded-xl text-sm sm:text-base">📝 Testo</button>
         </div>
 
-        <!-- FORM SCANNER FOTOCAMERA -->
+        <!-- FORM SCANNER FOTOCAMERA MULTIPAGINA -->
         <div id="saveScanArea" class="space-y-4">
-          <label class="block bg-blue-900/40 border-2 border-dashed border-blue-500 hover:bg-blue-900/60 text-blue-200 rounded-xl p-6 text-center cursor-pointer font-bold text-lg">
+          <label id="initialScanTrigger" class="block bg-blue-900/40 border-2 border-dashed border-blue-500 hover:bg-blue-900/60 text-blue-200 rounded-xl p-6 text-center cursor-pointer font-bold text-lg">
             <i class="fa-solid fa-camera text-3xl mb-2 block"></i>
-            Scatta Foto al Foglio Cartaceo
+            Scatta Foto Pagina Spartito
             <input type="file" id="cameraInput" accept="image/*" capture="environment" onchange="handleImageCaptured(event)" class="hidden">
           </label>
 
-          <!-- Anteprima Foto Scattata -->
-          <div id="scanPreviewContainer" class="hidden bg-slate-950 p-4 rounded-xl space-y-4">
-            <img id="scanPreview" class="max-h-64 mx-auto rounded-lg border border-slate-700">
+          <!-- Anteprima pagine scattate in sequenza -->
+          <div id="scanPreviewContainer" class="hidden bg-slate-950 p-4 rounded-xl space-y-4 border border-slate-800">
+            <div class="flex justify-between items-center bg-slate-900 p-3 rounded-lg">
+              <span id="pageCountBadge" class="bg-blue-600 text-white text-sm font-bold px-3 py-1 rounded-full">Pagine scattate: 0</span>
+              <button onclick="clearScanPages()" class="text-red-400 text-sm font-bold hover:underline"><i class="fa-solid fa-trash mr-1"></i> Ricomincia</button>
+            </div>
+            
+            <div id="thumbnailsContainer" class="flex gap-3 overflow-x-auto py-2"></div>
             
             <div id="ocrStatus" class="hidden text-amber-400 font-bold text-center animate-pulse">
-              <i class="fa-solid fa-spinner fa-spin mr-2"></i> Scannerizzazione testo in corso...
+              <i class="fa-solid fa-spinner fa-spin mr-2"></i> Riconoscimento OCR in corso...
             </div>
 
-            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <button onclick="convertToPDFAndSave()" class="btn-big bg-red-600 hover:bg-red-500 text-white font-bold rounded-xl flex items-center justify-center gap-2">
-                <i class="fa-solid fa-file-pdf"></i> Salva come PDF
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-2 pt-2">
+              <label class="btn-big bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-xl flex items-center justify-center gap-2 cursor-pointer text-sm">
+                <i class="fa-solid fa-camera-plus"></i> Scatta Altra Pagina
+                <input type="file" id="cameraInputMore" accept="image/*" capture="environment" onchange="handleImageCaptured(event)" class="hidden">
+              </label>
+              <button onclick="convertToPDFAndSave()" class="btn-big bg-red-600 hover:bg-red-500 text-white font-bold rounded-xl flex items-center justify-center gap-2 text-sm">
+                <i class="fa-solid fa-file-pdf"></i> Salva PDF (<span id="btnPageCount">0</span> pag)
               </button>
-              <button onclick="extractTextWithOCR()" class="btn-big bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-xl flex items-center justify-center gap-2">
+              <button onclick="extractTextWithOCR()" class="btn-big bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-xl flex items-center justify-center gap-2 text-sm">
                 <i class="fa-solid fa-font"></i> Estrai Testo (OCR)
               </button>
             </div>
@@ -197,7 +196,7 @@
 
         <!-- FORM TESTO -->
         <div id="saveTextArea" class="hidden space-y-3">
-          <textarea id="pastedContent" rows="6" placeholder="Incolla o scrivi il testo dello spartito..." class="w-full bg-slate-950 border border-slate-700 rounded-xl p-4 text-white font-mono"></textarea>
+          <textarea id="pastedContent" rows="6" placeholder="Incolla o scrivi il testo dello spartito con gli accordi..." class="w-full bg-slate-950 border border-slate-700 rounded-xl p-4 text-white font-mono"></textarea>
           <button onclick="saveText()" class="btn-big w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-xl">
             <i class="fa-solid fa-floppy-disk mr-2"></i> Salva Testo
           </button>
@@ -218,34 +217,51 @@
         </button>
       </div>
 
-      <!-- Controlli Testo per il Palco -->
-      <div id="textControls" class="hidden flex items-center justify-between bg-slate-900 p-2 rounded-xl border border-slate-700">
-        <span class="text-xs text-slate-400 font-bold px-2">DIMENSIONE TESTO:</span>
-        <div class="flex gap-2">
-          <button onclick="changeFontSize(-2)" class="px-4 py-1 bg-slate-700 text-white font-bold rounded-lg text-lg">-</button>
-          <button onclick="changeFontSize(2)" class="px-4 py-1 bg-slate-700 text-white font-bold rounded-lg text-lg">+</button>
+      <!-- Controlli Grafici per il Testo (Tema, Font, Dimensione) -->
+      <div id="textControls" class="hidden flex flex-wrap items-center justify-between gap-3 bg-slate-900 p-3 rounded-xl border border-slate-700">
+        <div class="flex items-center gap-2">
+          <span class="text-xs text-slate-400 font-bold">FONT:</span>
+          <select id="fontFamilySelect" onchange="changeFontFamily()" class="bg-slate-800 text-white text-xs p-2 rounded-lg border border-slate-700 font-bold">
+            <option value="'Courier New', Courier, monospace">Monospace (Allineato Accordi)</option>
+            <option value="system-ui, sans-serif">Sans-Serif (Moderna)</option>
+            <option value="Georgia, serif">Serif (Classica)</option>
+          </select>
+        </div>
+
+        <div class="flex items-center gap-2">
+          <span class="text-xs text-slate-400 font-bold">TEMA:</span>
+          <select id="viewerThemeSelect" onchange="changeViewerTheme()" class="bg-slate-800 text-white text-xs p-2 rounded-lg border border-slate-700 font-bold">
+            <option value="light">📄 Bianco Carta (Nero/Bianco)</option>
+            <option value="dark">🌙 Notte (Scuro)</option>
+            <option value="sepia">📜 Seppia (Vintage)</option>
+          </select>
+        </div>
+
+        <div class="flex items-center gap-2">
+          <span class="text-xs text-slate-400 font-bold">DIMENSIONE:</span>
+          <button onclick="changeFontSize(-2)" class="px-3 py-1 bg-slate-700 text-white font-bold rounded-lg text-lg">-</button>
+          <button onclick="changeFontSize(2)" class="px-3 py-1 bg-slate-700 text-white font-bold rounded-lg text-lg">+</button>
         </div>
       </div>
 
       <!-- Area Contenuto Spartito -->
-      <div id="viewerBody" class="bg-slate-950 p-4 rounded-xl border border-slate-800 min-h-[300px]"></div>
+      <div id="viewerBody" class="bg-slate-950 p-4 rounded-xl border border-slate-800 min-h-[300px] transition-colors duration-300"></div>
     </div>
   </main>
 
   <!-- SEZIONE ARCHIVIO -->
   <section id="archiveSection" class="hidden space-y-4">
-    <!-- Cerca nell'archivio -->
     <div class="bg-slate-800 p-4 rounded-2xl border border-slate-700">
       <input type="text" id="archiveSearchInput" oninput="renderArchive()" placeholder="Cerca tra gli spartiti salvati..." class="w-full bg-slate-900 border-2 border-slate-700 rounded-xl p-3 text-lg text-white outline-none focus:border-blue-500">
     </div>
 
-    <!-- SEZIONE BACKUP & RIPRISTINO -->
+    <!-- SEZIONE BACKUP & SICUREZZA -->
     <div class="bg-slate-800 p-5 rounded-2xl border border-slate-700 shadow-xl space-y-3">
       <h3 class="font-bold text-lg text-white flex items-center gap-2">
         <i class="fa-solid fa-shield-halved text-emerald-400"></i> Backup & Sicurezza Dati
       </h3>
       <p class="text-sm text-slate-300 leading-relaxed">
-        Salva una copia di sicurezza di tutti i tuoi spartiti per non perderli mai, anche se cancelli la cronologia o i dati del browser.
+        Salva una copia di sicurezza di tutti i tuoi spartiti per non perderli mai.
       </p>
       <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">
         <button onclick="exportBackup()" class="btn-big bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-xl flex items-center justify-center gap-2 shadow-md">
@@ -258,50 +274,47 @@
       </div>
     </div>
 
-    <!-- Lista Spartiti -->
     <div id="archiveList" class="space-y-3"></div>
   </section>
 
   <script>
-    let capturedImageData = null;
+    let scanPages = [];
     let directPdfData = null;
     let currentFontSize = 18;
+    let currentFontFamily = "'Courier New', Courier, monospace";
+    let currentTheme = "light";
     let splashTimeout = null;
 
-    // Gestione Sequenza Animazione Intro (Splash Screen)
     document.addEventListener("DOMContentLoaded", () => {
       updateArchiveCount();
 
-      // Fai partire la barra di caricamento dell'intro
       setTimeout(() => {
-        document.getElementById("splashProgressBar").style.width = "100%";
+        const bar = document.getElementById("splashProgressBar");
+        if (bar) bar.style.width = "100%";
       }, 100);
 
-      // Cambia messaggio dopo 2.5 secondi
       setTimeout(() => {
         const msg = document.getElementById("splashMessage");
-        msg.style.opacity = 0;
-        
-        setTimeout(() => {
-          msg.innerText = "Sincronizzazione completata. Benvenuto nel tuo archivio, Sig. Manunta!";
-          msg.className = "text-xl sm:text-2xl text-emerald-300 font-bold max-w-lg leading-relaxed";
-          msg.style.opacity = 1;
+        if (msg) {
+          msg.style.opacity = 0;
+          setTimeout(() => {
+            msg.innerText = "Pronto per il live! Tutti i tuoi spartiti sono sincronizzati.";
+            msg.className = "text-xl sm:text-2xl text-emerald-300 font-bold max-w-lg leading-relaxed";
+            msg.style.opacity = 1;
 
-          // Trasforma spinner in spunta di successo
-          const spinner = document.getElementById("spinnerBorder");
-          if(spinner) {
-            spinner.className = "w-28 h-28 rounded-full border-4 border-emerald-500 bg-emerald-500/10 flex items-center justify-center";
-          }
-        }, 400);
+            const spinner = document.getElementById("spinnerBorder");
+            if (spinner) {
+              spinner.className = "w-28 h-28 rounded-full border-4 border-emerald-500 bg-emerald-500/10 flex items-center justify-center";
+            }
+          }, 400);
+        }
       }, 2500);
 
-      // Chiudi automaticamente la schermata splash dopo 4.8 secondi
       splashTimeout = setTimeout(() => {
         skipSplash();
       }, 4800);
     });
 
-    // Chiusura manuale o automatica dello splash screen
     function skipSplash() {
       if (splashTimeout) clearTimeout(splashTimeout);
       const splash = document.getElementById("splashScreen");
@@ -368,7 +381,6 @@
       window.open(`https://www.google.com/search?q=${encodeURIComponent(query + ' spartito pdf ' + inst)}`, '_blank');
     }
 
-    // Cambio modalità Aggiunta
     function setSaveMode(mode) {
       document.getElementById("saveScanArea").classList.toggle("hidden", mode !== 'scan');
       document.getElementById("savePdfArea").classList.toggle("hidden", mode !== 'pdf');
@@ -384,15 +396,132 @@
       document.getElementById("modeTextBtn").className = mode === 'text' ? btnClassActive : btnClassInactive;
     }
 
-    // Selezione File PDF Diretto
-    function handleDirectPdfSelected(event) {
+    function handleImageCaptured(event) {
       const file = event.target.files[0];
       if (!file) return;
 
-      if (file.type !== "application/pdf" && !file.name.endsWith(".pdf")) {
-        alert("Seleziona un file valido in formato PDF!");
-        return;
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        scanPages.push(e.target.result);
+        updateScanPreviewUI();
+      };
+      reader.readAsDataURL(file);
+    }
+
+    function updateScanPreviewUI() {
+      const container = document.getElementById("thumbnailsContainer");
+      container.innerHTML = "";
+      
+      scanPages.forEach((imgData, index) => {
+        container.innerHTML += `
+          <div class="relative flex-shrink-0">
+            <img src="${imgData}" class="h-24 w-20 object-cover rounded-lg border-2 border-blue-500 shadow">
+            <span class="absolute top-1 left-1 bg-black/70 text-white text-xs px-1.5 py-0.5 rounded font-bold">P.${index + 1}</span>
+          </div>
+        `;
+      });
+
+      document.getElementById("pageCountBadge").innerText = `Pagine scattate: ${scanPages.length}`;
+      document.getElementById("btnPageCount").innerText = scanPages.length;
+      document.getElementById("scanPreviewContainer").classList.remove("hidden");
+    }
+
+    function clearScanPages() {
+      scanPages = [];
+      document.getElementById("scanPreviewContainer").classList.add("hidden");
+      document.getElementById("cameraInput").value = "";
+    }
+
+    async function convertToPDFAndSave() {
+      if (scanPages.length === 0) return;
+      const { query, inst } = getCleanInput();
+      const { jsPDF } = window.jspdf;
+      
+      const pdf = new jsPDF('p', 'mm', 'a4');
+      const pageWidth = 210;
+      const pageHeight = 297;
+
+      for (let i = 0; i < scanPages.length; i++) {
+        if (i > 0) pdf.addPage('a4', 'p');
+        
+        await new Promise((resolve) => {
+          const img = new Image();
+          img.src = scanPages[i];
+          img.onload = function() {
+            const imgWidth = pageWidth - 20;
+            const imgHeight = (img.height * imgWidth) / img.width;
+            
+            let finalWidth = imgWidth;
+            let finalHeight = imgHeight;
+            
+            if (imgHeight > (pageHeight - 20)) {
+              finalHeight = pageHeight - 20;
+              finalWidth = (img.width * finalHeight) / img.height;
+            }
+            
+            const x = (pageWidth - finalWidth) / 2;
+            const y = (pageHeight - finalHeight) / 2;
+            
+            pdf.addImage(scanPages[i], 'JPEG', x, y, finalWidth, finalHeight);
+            resolve();
+          };
+        });
       }
+
+      const pdfDataUrl = pdf.output('datauristring');
+      
+      const song = {
+        id: Date.now().toString(),
+        title: (query || "SPARTITO SCANSIONATO").toUpperCase(),
+        instrument: inst,
+        type: 'file',
+        fileType: 'application/pdf',
+        fileData: pdfDataUrl
+      };
+
+      saveToStorage(song);
+      scanPages = [];
+      document.getElementById("scanPreviewContainer").classList.add("hidden");
+    }
+
+    async function extractTextWithOCR() {
+      if (scanPages.length === 0) return;
+      const { query, inst } = getCleanInput();
+      const ocrStatus = document.getElementById("ocrStatus");
+      ocrStatus.classList.remove("hidden");
+
+      try {
+        const worker = await Tesseract.createWorker('ita');
+        let fullText = "";
+
+        for (let i = 0; i < scanPages.length; i++) {
+          const ret = await worker.recognize(scanPages[i]);
+          fullText += `\n--- PAGINA ${i + 1} ---\n` + ret.data.text;
+        }
+
+        await worker.terminate();
+        ocrStatus.classList.add("hidden");
+
+        const song = {
+          id: Date.now().toString(),
+          title: (query || "TESTO ESTRATTO").toUpperCase(),
+          instrument: inst,
+          type: 'text',
+          content: fullText
+        };
+
+        saveToStorage(song);
+        scanPages = [];
+        document.getElementById("scanPreviewContainer").classList.add("hidden");
+      } catch (err) {
+        ocrStatus.classList.add("hidden");
+        alert("Errore durante l'OCR delle pagine.");
+      }
+    }
+
+    function handleDirectPdfSelected(event) {
+      const file = event.target.files[0];
+      if (!file) return;
 
       const reader = new FileReader();
       reader.onload = function(e) {
@@ -404,13 +533,9 @@
       reader.readAsDataURL(file);
     }
 
-    // Salva PDF Diretto
     function saveDirectPdf() {
       const { query, inst } = getCleanInput();
-      if (!directPdfData) {
-        alert("Seleziona prima un file PDF dal tuo dispositivo!");
-        return;
-      }
+      if (!directPdfData) { alert("Seleziona prima un file PDF!"); return; }
 
       const song = {
         id: Date.now().toString(),
@@ -427,82 +552,9 @@
       document.getElementById("directPdfInput").value = "";
     }
 
-    // Foto da Fotocamera
-    function handleImageCaptured(event) {
-      const file = event.target.files[0];
-      if (!file) return;
-
-      const reader = new FileReader();
-      reader.onload = function(e) {
-        capturedImageData = e.target.result;
-        document.getElementById("scanPreview").src = capturedImageData;
-        document.getElementById("scanPreviewContainer").classList.remove("hidden");
-      };
-      reader.readAsDataURL(file);
-    }
-
-    function convertToPDFAndSave() {
-      const { query, inst } = getCleanInput();
-      if (!capturedImageData) return;
-
-      const { jsPDF } = window.jspdf;
-      const pdf = new jsPDF();
-      
-      const img = new Image();
-      img.src = capturedImageData;
-      img.onload = function() {
-        const imgWidth = 190;
-        const imgHeight = (img.height * imgWidth) / img.width;
-        pdf.addImage(capturedImageData, 'JPEG', 10, 10, imgWidth, imgHeight);
-        
-        const pdfDataUrl = pdf.output('datauristring');
-        
-        const song = {
-          id: Date.now().toString(),
-          title: (query || "SPARTITO SCANSIONATO").toUpperCase(),
-          instrument: inst,
-          type: 'file',
-          fileType: 'application/pdf',
-          fileData: pdfDataUrl
-        };
-
-        saveToStorage(song);
-      };
-    }
-
-    async function extractTextWithOCR() {
-      const { query, inst } = getCleanInput();
-      if (!capturedImageData) return;
-
-      const ocrStatus = document.getElementById("ocrStatus");
-      ocrStatus.classList.remove("hidden");
-
-      try {
-        const worker = await Tesseract.createWorker('ita');
-        const ret = await worker.recognize(capturedImageData);
-        await worker.terminate();
-
-        ocrStatus.classList.add("hidden");
-
-        const song = {
-          id: Date.now().toString(),
-          title: (query || "TESTO ESTRATTO").toUpperCase(),
-          instrument: inst,
-          type: 'text',
-          content: ret.data.text
-        };
-
-        saveToStorage(song);
-      } catch (err) {
-        ocrStatus.classList.add("hidden");
-        alert("Errore durante l'OCR del testo.");
-      }
-    }
-
     function saveLink() {
       const { query, inst } = getCleanInput();
       const url = document.getElementById("linkInput").value.trim();
-
       if (!url) { alert("Inserisci l'URL!"); return; }
 
       const song = { id: Date.now().toString(), title: (query || "LINK SPARTITO").toUpperCase(), instrument: inst, type: 'link', url: url };
@@ -513,7 +565,6 @@
     function saveText() {
       const { query, inst } = getCleanInput();
       const content = document.getElementById("pastedContent").value.trim();
-
       if (!content) { alert("Scrivi o incolla il testo!"); return; }
 
       const song = { id: Date.now().toString(), title: (query || "SPARTITO TESTO").toUpperCase(), instrument: inst, type: 'text', content: content };
@@ -527,8 +578,6 @@
       localStorage.setItem("spartiti_db", JSON.stringify(savedSongs));
 
       document.getElementById("webSearchPanel").classList.add("hidden");
-      document.getElementById("scanPreviewContainer").classList.add("hidden");
-      capturedImageData = null;
       updateArchiveCount();
       displaySong(song);
       alert("Spartito salvato in Archivio!");
@@ -554,24 +603,59 @@
           </div>
         `;
       } else if (song.type === 'file') {
-        if (song.fileType.includes('pdf')) {
-          viewerBody.innerHTML = `<embed src="${song.fileData}" type="application/pdf" class="w-full h-[600px] rounded-xl" />`;
-        } else {
-          viewerBody.innerHTML = `<img src="${song.fileData}" class="max-w-full h-auto mx-auto rounded-xl shadow-md" />`;
-        }
+        viewerBody.innerHTML = `<embed src="${song.fileData}#view=FitH" type="application/pdf" class="w-full h-[700px] rounded-xl bg-white" />`;
       } else {
         textControls.classList.remove("hidden");
-        viewerBody.innerHTML = `<pre id="textContent" class="text-slate-200 font-mono leading-relaxed">${song.content}</pre>`;
-        document.getElementById("textContent").style.fontSize = `${currentFontSize}px`;
+        viewerBody.innerHTML = `<pre id="textContent" class="p-4 rounded-xl font-mono leading-relaxed overflow-x-auto">${song.content}</pre>`;
+        applyTextStyles();
       }
 
       document.getElementById("resultCard").classList.remove("hidden");
     }
 
-    function changeFontSize(delta) {
-      currentFontSize = Math.max(12, Math.min(36, currentFontSize + delta));
+    function applyTextStyles() {
       const el = document.getElementById("textContent");
-      if (el) el.style.fontSize = `${currentFontSize}px`;
+      const viewerBody = document.getElementById("viewerBody");
+      if (!el || !viewerBody) return;
+
+      el.style.fontSize = `${currentFontSize}px`;
+      el.style.fontFamily = currentFontFamily;
+
+      viewerBody.className = "p-4 rounded-xl border transition-colors duration-300 shadow-inner overflow-x-auto";
+      
+      if (currentTheme === 'light') {
+        viewerBody.style.backgroundColor = "#ffffff";
+        viewerBody.style.color = "#0f172a";
+        viewerBody.style.borderColor = "#cbd5e1";
+        el.style.color = "#0f172a";
+      } else if (currentTheme === 'sepia') {
+        viewerBody.style.backgroundColor = "#fdf6e2";
+        viewerBody.style.color = "#433422";
+        viewerBody.style.borderColor = "#e6d5b8";
+        el.style.color = "#433422";
+      } else {
+        viewerBody.style.backgroundColor = "#020617";
+        viewerBody.style.color = "#f8fafc";
+        viewerBody.style.borderColor = "#1e293b";
+        el.style.color = "#f8fafc";
+      }
+    }
+
+    function changeFontSize(delta) {
+      currentFontSize = Math.max(12, Math.min(40, currentFontSize + delta));
+      applyTextStyles();
+    }
+
+    function changeFontFamily() {
+      const select = document.getElementById("fontFamilySelect");
+      currentFontFamily = select.value;
+      applyTextStyles();
+    }
+
+    function changeViewerTheme() {
+      const select = document.getElementById("viewerThemeSelect");
+      currentTheme = select.value;
+      applyTextStyles();
     }
 
     function closeViewer() {
@@ -632,15 +716,10 @@
       }
     }
 
-    // --- FUNZIONI BACKUP E RIPRISTINO ---
     function exportBackup() {
       const savedSongs = localStorage.getItem("spartiti_db") || "[]";
       const songsArray = JSON.parse(savedSongs);
-
-      if (songsArray.length === 0) {
-        alert("L'archivio è vuoto! Aggiungi prima qualche spartito prima di scaricare il backup.");
-        return;
-      }
+      if (songsArray.length === 0) { alert("L'archivio è vuoto!"); return; }
 
       const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(songsArray, null, 2));
       const downloadAnchor = document.createElement('a');
@@ -661,15 +740,11 @@
       reader.onload = function(e) {
         try {
           const importedSongs = JSON.parse(e.target.result);
-          if (!Array.isArray(importedSongs)) {
-            throw new Error("Formato non valido");
-          }
+          if (!Array.isArray(importedSongs)) throw new Error();
 
           let existingSongs = JSON.parse(localStorage.getItem("spartiti_db") || "[]");
-          
           if (existingSongs.length > 0) {
-            const confirmMerge = confirm("Hai già degli spartiti salvati nell'app.\n\n- Premendo OK unirai i nuovi spartiti a quelli attuali.\n- Premendo Annulla sostituirai del tutto l'archivio attuale con quello del backup.");
-            if (confirmMerge) {
+            if (confirm("Unire i backup o sostituire l'archivio? OK = Unisci, Annulla = Sostituisci")) {
               const existingIds = new Set(existingSongs.map(s => s.id));
               const newSongs = importedSongs.filter(s => !existingIds.has(s.id));
               existingSongs = [...existingSongs, ...newSongs];
@@ -683,20 +758,19 @@
           localStorage.setItem("spartiti_db", JSON.stringify(existingSongs));
           updateArchiveCount();
           renderArchive();
-          alert(`Backup ripristinato con successo! Presenti ${existingSongs.length} spartiti in totale.`);
+          alert(`Backup ripristinato con successo!`);
         } catch (err) {
-          alert("Errore nel file di backup! Assicurati di aver selezionato un file .json generato da questa applicazione.");
+          alert("File di backup non valido.");
         }
         event.target.value = "";
       };
       reader.readAsText(file);
     }
 
-    // --- REGISTRAZIONE SERVICE WORKER (PWA & OFFLINE) ---
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {
         navigator.serviceWorker.register('./sw.js')
-          .then(() => console.log('PWA Pronta per uso Offline!'))
+          .then(() => console.log('PWA Offline Pronta!'))
           .catch(err => console.log('Errore SW:', err));
       });
     }
