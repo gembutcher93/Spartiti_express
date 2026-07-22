@@ -21,6 +21,11 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <!-- Libreria Tesseract.js per l'OCR (Scanner di testo) -->
   <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
+  <!-- Libreria PDF.js di Mozilla per rendering completo PDF multipagina su Tablet/Mobile -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+  <script>
+    pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+  </script>
 
   <style>
     body { font-family: system-ui, -apple-system, sans-serif; background-color: #0f172a; color: #f8fafc; }
@@ -595,7 +600,7 @@
         title: (query || "SPARTITO SCANSIONATO").toUpperCase(),
         instrument: inst,
         type: 'scan',
-        images: [...scanPages], // Salva le immagini HD native
+        images: [...scanPages],
         fileType: 'application/pdf',
         fileData: pdfDataUrl,
         content: ""
@@ -618,11 +623,7 @@
 
       try {
         const worker = await Tesseract.createWorker('ita');
-        
-        // Mantiene la spaziatura orizzontale orizzontale tra note e testo
-        await worker.setParameters({
-          preserve_interword_spaces: '1',
-        });
+        await worker.setParameters({ preserve_interword_spaces: '1' });
 
         let fullText = "";
         for (let i = 0; i < scanPages.length; i++) {
@@ -723,7 +724,7 @@
 
 
     // ==========================================
-    // VISUALIZZATORE E GESTIONE UNIFICATA SPARTITO
+    // VISUALIZZATORE SPARTITI (PDF MULTIPAGINA E HD)
     // ==========================================
     function displaySong(song) {
       currentDisplayedSong = song;
@@ -744,7 +745,8 @@
           `;
         });
       } else if (song.fileData) {
-        visualBody.innerHTML = `<embed src="${song.fileData}#view=FitH" type="application/pdf" class="w-full h-[700px] rounded-xl bg-white" />`;
+        // Renderizza TUTTE le pagine del PDF utilizzando PDF.js
+        renderPdfPages(song.fileData, visualBody);
       } else if (song.type === 'link') {
         visualBody.innerHTML = `
           <div class="text-center py-8 space-y-4">
@@ -759,12 +761,11 @@
         visualBody.innerHTML = `<div class="text-center text-slate-400 py-12">Nessun file visivo o immagine allegata.<br>Utilizza la scheda <b>Testo & Accordi</b> per consultare o modificare il testo.</div>`;
       }
 
-      // Popola il testo editabile
       document.getElementById("textContentArea").value = song.content || "";
 
-      // Gestione del pulsante Genera OCR se sono presenti foto
+      // Attiva OCR sia per la scanzione immagini che per i PDF salvati
       const btnOcr = document.getElementById("btnRunOcrOnCurrent");
-      if (song.images && song.images.length > 0) {
+      if ((song.images && song.images.length > 0) || song.fileData) {
         btnOcr.classList.remove("hidden");
       } else {
         btnOcr.classList.add("hidden");
@@ -772,11 +773,54 @@
 
       document.getElementById("resultCard").classList.remove("hidden");
 
-      // Di default apre la vista adatta
       if (song.type === 'text' || (!song.images && !song.fileData && !song.url)) {
         switchViewerSubTab('text');
       } else {
         switchViewerSubTab('visual');
+      }
+    }
+
+    // MOTORE DI RENDERING MULTIPAGINA PER PDF (PDF.JS)
+    async function renderPdfPages(pdfDataUrl, container) {
+      container.innerHTML = `
+        <div class="text-center py-12 text-blue-400 font-bold animate-pulse">
+          <i class="fa-solid fa-spinner fa-spin text-3xl mb-3 block"></i>
+          Caricamento di tutte le pagine del PDF...
+        </div>
+      `;
+
+      try {
+        const loadingTask = pdfjsLib.getDocument(pdfDataUrl);
+        const pdf = await loadingTask.promise;
+        container.innerHTML = "";
+
+        for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
+          const page = await pdf.getPage(pageNum);
+          const scale = 2.0; // Alta definizione per tablet
+          const viewport = page.getViewport({ scale: scale });
+
+          const pageDiv = document.createElement('div');
+          pageDiv.className = 'mb-6 flex flex-col items-center';
+
+          const label = document.createElement('p');
+          label.className = 'text-xs font-bold text-slate-400 mb-2 uppercase tracking-wider w-full text-left';
+          label.innerText = `Pagina ${pageNum} di ${pdf.numPages}`;
+          pageDiv.appendChild(label);
+
+          const canvas = document.createElement('canvas');
+          canvas.className = 'w-full h-auto rounded-xl shadow-lg border border-slate-700 bg-white block';
+          const context = canvas.getContext('2d');
+          canvas.height = viewport.height;
+          canvas.width = viewport.width;
+
+          pageDiv.appendChild(canvas);
+          container.appendChild(pageDiv);
+
+          await page.render({ canvasContext: context, viewport: viewport }).promise;
+        }
+      } catch (err) {
+        console.error("Errore rendering PDF.js:", err);
+        container.innerHTML = `<embed src="${pdfDataUrl}" type="application/pdf" class="w-full h-[700px] rounded-xl bg-white" />`;
       }
     }
 
@@ -808,22 +852,45 @@
     }
 
     async function runOcrOnCurrentSong() {
-      if (!currentDisplayedSong || !currentDisplayedSong.images || currentDisplayedSong.images.length === 0) {
-        alert("Nessuna immagine ad alta definizione trovata in questo file.");
-        return;
-      }
+      if (!currentDisplayedSong) return;
 
       const btn = document.getElementById("btnRunOcrOnCurrent");
       btn.disabled = true;
       btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin mr-1"></i> OCR in corso...`;
 
       try {
+        let imagesToOcr = currentDisplayedSong.images || [];
+
+        // Se è un PDF e non ha immagini scansionate, estraiamo le pagine al volo come immagini
+        if (imagesToOcr.length === 0 && currentDisplayedSong.fileData) {
+          imagesToOcr = [];
+          const loadingTask = pdfjsLib.getDocument(currentDisplayedSong.fileData);
+          const pdf = await loadingTask.promise;
+          for (let i = 1; i <= pdf.numPages; i++) {
+            const page = await pdf.getPage(i);
+            const viewport = page.getViewport({ scale: 1.5 });
+            const canvas = document.createElement('canvas');
+            canvas.height = viewport.height;
+            canvas.width = viewport.width;
+            const ctx = canvas.getContext('2d');
+            await page.render({ canvasContext: ctx, viewport: viewport }).promise;
+            imagesToOcr.push(canvas.toDataURL('image/png'));
+          }
+        }
+
+        if (imagesToOcr.length === 0) {
+          alert("Nessun contenuto visivo trovato da analizzare.");
+          btn.disabled = false;
+          btn.innerHTML = `<i class="fa-solid fa-font mr-1"></i> Genera/Esegui OCR`;
+          return;
+        }
+
         const worker = await Tesseract.createWorker('ita');
         await worker.setParameters({ preserve_interword_spaces: '1' });
         
         let fullText = "";
-        for (let i = 0; i < currentDisplayedSong.images.length; i++) {
-          const ret = await worker.recognize(currentDisplayedSong.images[i]);
+        for (let i = 0; i < imagesToOcr.length; i++) {
+          const ret = await worker.recognize(imagesToOcr[i]);
           fullText += (i > 0 ? "\n\n" : "") + `--- PAGINA ${i + 1} ---\n` + ret.data.text;
         }
         await worker.terminate();
